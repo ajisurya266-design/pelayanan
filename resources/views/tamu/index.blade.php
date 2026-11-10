@@ -174,7 +174,7 @@
                             <!-- Tanda Tangan -->
                             <td class="text-center">
                                 @if($tamu->tanda_tangan)
-                                    <button type="button" class="btn btn-sm btn-light border p-1 rounded-2 shadow-sm" onclick="previewTtd('{{ $tamu->tanda_tangan }}', '{{ $tamu->nama }}')" title="Lihat Tanda Tangan">
+                                    <button type="button" class="btn btn-sm btn-light border p-1 rounded-2 shadow-sm btn-preview-ttd" title="Lihat Tanda Tangan" data-src="{{ $tamu->tanda_tangan }}" data-nama="{{ $tamu->nama }}">
                                         <img src="{{ $tamu->tanda_tangan }}" alt="TTD" style="height: 32px; max-width: 65px; object-fit: contain;">
                                     </button>
                                 @else
@@ -193,20 +193,15 @@
                                     <a href="{{ route('tamu.edit', $tamu->id) }}" class="btn btn-light border" title="Edit Data">
                                         <i class="bi bi-pencil text-warning"></i>
                                     </a>
-                                    <button type="button" class="btn btn-light border text-danger" title="Hapus Data" onclick="confirmDelete({{ $tamu->id }}, '{{ $tamu->nama }}')">
+                                    <button type="button" class="btn btn-light border text-danger btn-delete-tamu" title="Hapus Data" data-id="{{ $tamu->id }}" data-nama="{{ $tamu->nama }}">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
-
-                                <form id="delete-form-{{ $tamu->id }}" action="{{ route('tamu.destroy', $tamu->id) }}" method="POST" style="display: none;">
-                                    @csrf
-                                    @method('DELETE')
-                                </form>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">
+                            <td colspan="7" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
                                 Tidak ada data tamu yang cocok dengan kriteria pencarian / filter.
                             </td>
@@ -215,6 +210,12 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Hidden Global Delete Form -->
+        <form id="global-delete-form" action="" method="POST" style="display: none;">
+            @csrf
+            @method('DELETE')
+        </form>
 
         <!-- Pagination -->
         @if($tamuList->hasPages())
@@ -253,6 +254,7 @@
 
 @section('scripts')
 <script>
+    // Preview Tanda Tangan modal
     function previewTtd(src, nama) {
         document.getElementById('modalTtdTitle').innerText = 'Tanda Tangan: ' + nama;
         document.getElementById('modalTtdImg').src = src;
@@ -260,6 +262,7 @@
         modal.show();
     }
 
+    // Konfirmasi Hapus Data
     function confirmDelete(id, nama) {
         Swal.fire({
             title: 'Hapus data tamu ini?',
@@ -272,10 +275,27 @@
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
-                document.getElementById('delete-form-' + id).submit();
+                const form = document.getElementById('global-delete-form');
+                form.action = '{{ url("tamu") }}/' + id;
+                form.submit();
             }
         });
     }
+
+    // Event listener berbasis data-attributes (Bebas error linter / red squiggly)
+    document.addEventListener('click', function(e) {
+        const btnTtd = e.target.closest('.btn-preview-ttd');
+        if (btnTtd) {
+            previewTtd(btnTtd.getAttribute('data-src'), btnTtd.getAttribute('data-nama'));
+            return;
+        }
+
+        const btnDel = e.target.closest('.btn-delete-tamu');
+        if (btnDel) {
+            confirmDelete(btnDel.getAttribute('data-id'), btnDel.getAttribute('data-nama'));
+            return;
+        }
+    });
 </script>
 @endsection
 
